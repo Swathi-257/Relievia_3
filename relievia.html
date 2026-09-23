@@ -1,0 +1,1103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Relievia — Autonomous Smart Bed · Digital Twin Pressure Injury Prevention</title>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+:root{
+  --deep:#0B0C0E; --charcoal:#151719; --graphite:#1B1E21;
+  --panel:#1A1C1F; --panel-alt:#212427; --border:#2B2F33; --border-soft:rgba(255,255,255,0.06);
+  --text:#EDEEEF; --text-dim:#9AA1A7; --text-faint:#666C71;
+  --white:#F4F5F6; --red:#E4484F; --red-deep:#B4323A;
+  --safe:#3ECF8E; --safe-bg:rgba(62,207,142,0.12);
+  --moderate:#E8C547; --moderate-bg:rgba(232,197,71,0.12);
+  --high:#E8873F; --high-bg:rgba(232,135,63,0.12);
+  --critical:#E0464F; --critical-bg:rgba(224,70,79,0.14);
+  --mono:'IBM Plex Mono', monospace; --display:'Space Grotesk', sans-serif; --body:'Inter', sans-serif;
+  --radius:12px;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:radial-gradient(ellipse at 20% -10%, rgba(228,72,79,0.05), transparent 55%),
+             radial-gradient(ellipse at 100% 100%, rgba(255,255,255,0.03), transparent 45%), var(--deep);
+  color:var(--text); font-family:var(--body); height:100vh; overflow:hidden; display:flex; flex-direction:column;
+}
+::-webkit-scrollbar{width:8px;height:8px;}
+::-webkit-scrollbar-thumb{background:#33383D;border-radius:8px;}
+::-webkit-scrollbar-track{background:transparent;}
+
+.ml-badge{font-family:var(--mono);font-size:9.5px;font-weight:600;padding:2px 8px;border-radius:12px;border:1px solid var(--border);transition:all .3s ease;text-transform:none;}
+.ml-badge.connected{color:var(--safe);background:var(--safe-bg);border-color:rgba(62,207,142,0.35);box-shadow:0 0 8px rgba(62,207,142,0.2);}
+.ml-badge.offline{color:var(--text-faint);background:rgba(255,255,255,0.03);border-color:var(--border);}
+.ml-subnote{font-size:8.5px;color:var(--text-faint);text-align:center;margin-top:5px;font-family:var(--body);letter-spacing:.2px;}
+
+header{
+  background:linear-gradient(180deg,var(--charcoal) 0%, var(--deep) 100%); color:#fff; padding:10px 20px;
+  display:flex; align-items:center; gap:22px; flex-shrink:0; border-bottom:1px solid var(--border); z-index:50;
+}
+.brand{display:flex;align-items:center;gap:10px;}
+.brand-mark{width:36px;height:36px;border-radius:9px;background:linear-gradient(135deg,#26292c,#131416);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;position:relative;}
+.brand-mark::after{content:'';width:9px;height:9px;border-radius:50%;background:var(--red);box-shadow:0 0 10px 2px rgba(228,72,79,0.65);animation:pulse-dot 2.2s ease-in-out infinite;}
+@keyframes pulse-dot{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.45;transform:scale(1.35);}}
+.brand-text .name{font-family:var(--display);font-weight:700;font-size:19px;letter-spacing:0.3px;line-height:1;}
+.brand-text .tag{font-size:9.5px;color:var(--text-faint);letter-spacing:1.5px;text-transform:uppercase;margin-top:4px;}
+.clock-chip{font-family:var(--mono);background:var(--deep);border:1px solid var(--border);border-radius:8px;padding:6px 12px;display:flex;align-items:center;gap:8px;color:var(--safe);font-size:14.5px;letter-spacing:1px;}
+.clock-chip .lbl{font-size:9px;color:var(--text-faint);letter-spacing:1.5px;text-transform:uppercase;font-family:var(--body);font-weight:600;}
+.hdr-controls{display:flex;align-items:center;gap:9px;margin-left:auto;flex-wrap:wrap;}
+.hdr-group{display:flex;align-items:center;gap:4px;background:rgba(255,255,255,0.04);padding:4px;border-radius:9px;border:1px solid var(--border-soft);}
+.btn{font-family:var(--body);font-weight:600;font-size:12px;border:none;border-radius:7px;padding:8px 12px;cursor:pointer;transition:all .15s ease;display:flex;align-items:center;gap:6px;}
+.btn-primary{background:var(--red);color:#fff;} .btn-primary:hover{background:#f05860;}
+.btn-ghost{background:transparent;color:#C7CCD0;} .btn-ghost:hover{background:rgba(255,255,255,0.08);}
+.btn-demo{background:linear-gradient(90deg,#3a3d41,#202225);color:#fff;border:1px solid var(--border);} .btn-demo:hover{border-color:var(--red);}
+.btn.active{background:#fff;color:#111;}
+select.hdr-select{background:rgba(255,255,255,0.04);color:#fff;border:1px solid var(--border);border-radius:7px;padding:8px 9px;font-family:var(--body);font-size:12px;font-weight:600;cursor:pointer;}
+select.hdr-select option{color:#000;}
+.speed-seg{display:flex;background:rgba(255,255,255,0.04);border-radius:7px;overflow:hidden;border:1px solid var(--border-soft);}
+.speed-seg button{background:transparent;color:#9DA3A8;border:none;padding:8px 10px;font-family:var(--mono);font-size:12px;font-weight:600;cursor:pointer;}
+.speed-seg button.active{background:var(--red);color:#fff;}
+
+.layout{flex:1;display:grid;grid-template-columns:270px 1fr 336px;gap:12px;padding:12px;overflow:hidden;min-height:0;}
+.col{display:flex;flex-direction:column;gap:10px;min-height:0;overflow-y:auto;padding-right:2px;}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:13px 14px;flex-shrink:0;}
+.card-title{font-family:var(--display);font-weight:600;font-size:11.5px;letter-spacing:.7px;text-transform:uppercase;color:var(--text-dim);margin:0 0 10px 0;display:flex;align-items:center;gap:7px;}
+.card-title .dot{width:6px;height:6px;border-radius:50%;background:var(--red);box-shadow:0 0 6px rgba(228,72,79,0.7);}
+
+.patient-id{display:flex;gap:11px;align-items:center;margin-bottom:12px;}
+.avatar{width:44px;height:44px;border-radius:11px;background:linear-gradient(135deg,#2b2e31,#141618);border:1px solid var(--border);color:#fff;display:flex;align-items:center;justify-content:center;font-family:var(--display);font-weight:700;font-size:16px;flex-shrink:0;}
+.pid-name{font-weight:700;font-size:14px;line-height:1.2;} .pid-mrn{font-family:var(--mono);font-size:10.5px;color:var(--text-faint);margin-top:2px;}
+.chips{display:flex;flex-wrap:wrap;gap:6px;}
+.chip{font-size:10px;font-weight:600;padding:4px 9px;border-radius:20px;background:rgba(255,255,255,0.05);color:var(--text-dim);border:1px solid var(--border);}
+.chip.warn{background:var(--moderate-bg);color:var(--moderate);border-color:rgba(232,197,71,0.3);}
+.chip.crit{background:var(--critical-bg);color:var(--critical);border-color:rgba(224,70,79,0.35);}
+.field-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dashed var(--border);font-size:12px;}
+.field-row:last-child{border-bottom:none;} .field-row .k{color:var(--text-faint);} .field-row .v{font-weight:600;color:var(--text);}
+
+.ai-status-row{display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:9px;background:rgba(255,255,255,0.035);border:1px solid var(--border);margin-bottom:10px;}
+.ai-status-row .pulse{width:8px;height:8px;border-radius:50%;background:var(--safe);flex-shrink:0;animation:pulse-dot 1.8s ease-in-out infinite;box-shadow:0 0 6px rgba(62,207,142,0.7);}
+.ai-status-row.eval{background:var(--moderate-bg);} .ai-status-row.eval .pulse{background:var(--moderate);box-shadow:0 0 6px rgba(232,197,71,0.7);}
+.ai-status-row.repo{background:var(--critical-bg);} .ai-status-row.repo .pulse{background:var(--critical);box-shadow:0 0 6px rgba(224,70,79,0.7);}
+.ai-status-row .txt{font-size:12px;font-weight:700;} .ai-status-row .sub{font-size:10px;color:var(--text-faint);font-weight:500;}
+
+.vitals-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:10px;}
+.vital-box{background:var(--panel-alt);border:1px solid var(--border-soft);border-radius:9px;padding:7px 9px;}
+.vital-box .vlabel{font-size:9px;color:var(--text-faint);text-transform:uppercase;letter-spacing:.5px;font-weight:700;}
+.vital-box .vval{font-family:var(--mono);font-size:15px;font-weight:600;color:var(--text);margin-top:2px;}
+.ecg-wrap{margin-top:8px;height:32px;overflow:hidden;border-radius:7px;background:var(--deep);border:1px solid var(--border-soft);position:relative;}
+.ecg-wrap svg{width:200%;height:100%;animation:ecg-scroll 2.4s linear infinite;}
+@keyframes ecg-scroll{from{transform:translateX(0);}to{transform:translateX(-50%);}}
+
+.sim-panel{background:radial-gradient(ellipse at 50% 0%, #1a1d20, #0e0f11 78%);border:1px solid var(--border);border-radius:var(--radius);position:relative;flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden;}
+.sim-topbar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;padding:10px 14px;border-bottom:1px solid var(--border);background:rgba(255,255,255,0.02);}
+.sim-topbar h2{font-family:var(--display);font-size:13.5px;margin:0;font-weight:600;color:var(--text);}
+.sim-topbar .scenario-name{font-size:10.5px;color:var(--text-faint);margin-top:2px;}
+.posture-badge{font-family:var(--mono);font-size:11px;font-weight:600;background:#101214;color:var(--safe);border:1px solid var(--border);padding:6px 11px;border-radius:20px;display:flex;align-items:center;gap:6px;}
+.cam-seg{display:flex;background:rgba(255,255,255,0.04);border-radius:7px;overflow:hidden;border:1px solid var(--border-soft);}
+.cam-seg button{background:transparent;color:#9DA3A8;border:none;padding:7px 10px;font-family:var(--body);font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;}
+.cam-seg button.active{background:var(--panel-alt);color:#fff;box-shadow:inset 0 0 0 1px var(--border);}
+.tilt-readout{font-family:var(--mono);font-size:10.5px;color:var(--text-faint);} .tilt-readout b{color:var(--text);}
+
+.sim-stage{flex:1;position:relative;min-height:0;}
+#mainCanvas{width:100%;height:100%;display:block;cursor:grab;}
+#mainCanvas.dragging{cursor:grabbing;}
+
+.alert-banner{position:absolute;top:12px;left:50%;transform:translateX(-50%) translateY(-140%);background:linear-gradient(90deg,#7d232c,#a52f39);color:#fff;border-radius:11px;padding:11px 17px;box-shadow:0 12px 28px rgba(0,0,0,0.45);display:flex;align-items:center;gap:14px;opacity:0;transition:transform .45s cubic-bezier(.2,.9,.3,1.3), opacity .3s ease;z-index:20;min-width:360px;border:1px solid rgba(255,255,255,0.12);}
+.alert-banner.show{transform:translateX(-50%) translateY(0);opacity:1;}
+.alert-banner .aicon{font-size:20px;animation:shake 1.4s ease-in-out infinite;}
+@keyframes shake{0%,100%{transform:rotate(0);}25%{transform:rotate(-8deg);}75%{transform:rotate(8deg);}}
+.alert-banner .atitle{font-weight:700;font-size:12.5px;letter-spacing:.3px;}
+.alert-banner .adetail{display:flex;gap:16px;margin-top:3px;font-family:var(--mono);font-size:10.5px;color:#FBD8DB;}
+.alert-banner .adetail b{color:#fff;font-size:12.5px;}
+
+.reason-panel{position:absolute;bottom:12px;left:12px;right:12px;background:rgba(10,11,12,0.96);color:#fff;border-radius:11px;padding:13px 15px;transform:translateY(120%);opacity:0;transition:all .4s cubic-bezier(.2,.9,.3,1.1);z-index:20;backdrop-filter:blur(6px);border:1px solid var(--border);}
+.reason-panel.show{transform:translateY(0);opacity:1;}
+.reason-panel .rp-title{font-family:var(--display);font-size:11.5px;letter-spacing:.6px;text-transform:uppercase;color:#C7CCD0;margin-bottom:10px;display:flex;align-items:center;gap:7px;}
+.rp-title .spin{width:10px;height:10px;border:2px solid #3a3d41;border-top-color:var(--red);border-radius:50%;animation:spin 0.8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.rp-options{display:flex;gap:10px;}
+.rp-opt{flex:1;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:9px;padding:9px 10px;transition:all .3s ease;opacity:0;transform:translateY(6px);}
+.rp-opt.reveal{opacity:1;transform:translateY(0);}
+.rp-opt.selected{background:rgba(62,207,142,0.14);border-color:var(--safe);}
+.rp-opt .rp-name{font-size:11px;font-weight:700;display:flex;justify-content:space-between;}
+.rp-opt .rp-bar-track{height:5px;border-radius:3px;background:rgba(255,255,255,0.1);margin-top:7px;overflow:hidden;}
+.rp-opt .rp-bar{height:100%;border-radius:3px;width:0%;transition:width .5s ease;}
+.rp-opt .rp-risk{font-family:var(--mono);font-size:14px;font-weight:600;margin-top:5px;}
+.rp-footer{margin-top:11px;padding-top:10px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;font-size:11px;}
+.rp-footer .sel-tag{font-family:var(--mono);color:var(--safe);font-weight:600;}
+
+.repo-progress{position:absolute;top:12px;left:12px;right:12px;display:none;align-items:center;gap:10px;background:rgba(10,11,12,0.9);border:1px solid var(--border);border-radius:10px;padding:9px 14px;z-index:19;}
+.repo-progress.show{display:flex;}
+.repo-progress .lbl{font-size:11px;font-weight:700;color:#fff;white-space:nowrap;}
+.repo-track{flex:1;height:6px;background:#2b2f33;border-radius:4px;overflow:hidden;}
+.repo-fill{height:100%;width:0%;background:linear-gradient(90deg,var(--red-deep),var(--red));border-radius:4px;transition:width .1s linear;}
+
+.relief-toast{position:absolute;top:12px;right:12px;background:var(--panel);border:1px solid var(--safe);border-radius:11px;padding:11px 14px;box-shadow:0 14px 30px rgba(0,0,0,0.5);opacity:0;transform:translateX(20px);transition:all .4s ease;z-index:25;min-width:210px;}
+.relief-toast.show{opacity:1;transform:translateX(0);}
+.relief-toast .rt-title{font-size:11px;font-weight:700;color:var(--safe);display:flex;align-items:center;gap:6px;}
+.relief-toast .rt-row{display:flex;justify-content:space-between;font-size:11.5px;margin-top:6px;color:var(--text-dim);}
+.relief-toast .rt-row .arrow{font-family:var(--mono);color:var(--text);}
+
+.heat-legend{position:absolute;bottom:12px;left:12px;display:flex;gap:10px;background:rgba(10,11,12,0.85);border:1px solid var(--border);border-radius:20px;padding:6px 12px;font-size:10px;font-weight:600;color:var(--text-dim);align-items:center;z-index:15;}
+.heat-legend .sw{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:4px;}
+.patient-key{position:absolute;top:12px;left:12px;display:flex;gap:9px;background:rgba(10,11,12,0.85);border:1px solid var(--border);border-radius:20px;padding:6px 12px;font-size:10px;font-weight:600;color:var(--text-dim);align-items:center;z-index:15;}
+.patient-key .sw{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:4px;}
+.drag-hint{position:absolute;bottom:12px;right:12px;background:rgba(10,11,12,0.7);border:1px solid var(--border);border-radius:20px;padding:6px 12px;font-size:10px;color:var(--text-faint);z-index:15;display:none;}
+.drag-hint.show{display:block;}
+
+.gauge-wrap{display:flex;flex-direction:column;align-items:center;}
+.gauge-num{font-family:var(--display);font-size:32px;font-weight:700;margin-top:-44px;color:var(--text);}
+.gauge-cat{font-size:10.5px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;padding:3px 10px;border-radius:20px;margin-top:2px;}
+
+.twin-mini{display:flex;gap:12px;align-items:center;}
+.twin-canvas-wrap{width:96px;height:78px;flex-shrink:0;background:#0B0C0E;border-radius:10px;overflow:hidden;position:relative;border:1px solid var(--border);}
+.twin-canvas-wrap::before{content:'DIGITAL TWIN';position:absolute;top:3px;left:0;right:0;text-align:center;font-family:var(--mono);font-size:6px;letter-spacing:1px;color:var(--text-faint);z-index:2;}
+#twinCanvas{width:100%;height:100%;display:block;}
+.twin-facts{flex:1;font-size:11px;}
+.twin-facts .tf-row{display:flex;justify-content:space-between;padding:3px 0;} .twin-facts .tf-row .k{color:var(--text-faint);} .twin-facts .tf-row .v{font-weight:700;color:var(--text);}
+.reco-box{margin-top:10px;background:var(--panel-alt);border:1px solid var(--border-soft);border-radius:9px;padding:9px 10px;font-size:11px;color:var(--text-dim);line-height:1.5;}
+
+.forecast-row{display:flex;gap:8px;}
+.forecast-box{flex:1;background:var(--panel-alt);border:1px solid var(--border-soft);border-radius:9px;padding:8px 9px;text-align:center;}
+.forecast-box .flabel{font-size:9px;color:var(--text-faint);font-weight:700;text-transform:uppercase;}
+.forecast-box .fval{font-family:var(--mono);font-size:16px;font-weight:600;margin-top:3px;}
+.forecast-box .ftrend{font-size:9.5px;margin-top:2px;font-weight:600;}
+.chart-wrap{margin-top:4px;} .chart-wrap svg{width:100%;height:78px;display:block;}
+
+.kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.kpi-box{background:var(--panel-alt);border:1px solid var(--border-soft);border-radius:9px;padding:8px 9px;}
+.kpi-box .klabel{font-size:8.5px;color:var(--text-faint);font-weight:700;text-transform:uppercase;letter-spacing:.3px;}
+.kpi-box .kval{font-family:var(--mono);font-size:14.5px;font-weight:600;margin-top:3px;color:var(--text);}
+
+.history-list{list-style:none;margin:0;padding:0;max-height:120px;overflow-y:auto;font-size:11px;}
+.history-list li{display:flex;justify-content:space-between;padding:6px 2px;border-bottom:1px dashed var(--border);color:var(--text-dim);}
+.history-list li:last-child{border-bottom:none;} .history-list .htime{font-family:var(--mono);color:var(--text-faint);font-size:10px;}
+
+.timeline{list-style:none;margin:0;padding:0;max-height:200px;overflow-y:auto;}
+.timeline li{display:flex;gap:9px;padding:7px 2px;position:relative;}
+.timeline .tdot{width:7px;height:7px;border-radius:50%;margin-top:4px;flex-shrink:0;}
+.timeline .ttext{font-size:11px;line-height:1.4;color:var(--text-dim);} .timeline .ttext b{color:var(--text);}
+.timeline .ttime{font-family:var(--mono);font-size:9.5px;color:var(--text-faint);display:block;margin-top:1px;}
+.footer-tagline{text-align:center;font-size:10px;color:var(--text-faint);padding:2px 0 0;font-style:italic;}
+
+@media (max-width:1100px){ .layout{grid-template-columns:1fr;grid-auto-rows:auto;overflow-y:auto;} .col{overflow-y:visible;} .sim-panel{min-height:480px;} }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="brand-mark"></div>
+    <div class="brand-text"><div class="name">Relievia</div><div class="tag">Autonomous Pressure Injury Prevention</div></div>
+  </div>
+  <div class="clock-chip"><span class="lbl">Ward Clock</span><span id="clockReadout">08:00</span></div>
+  <div class="hdr-controls">
+    <select class="hdr-select" id="scenarioSelect">
+      <option value="healthy">Healthy Adult</option>
+      <option value="elderly">Elderly Patient</option>
+      <option value="diabetic">Diabetic Patient</option>
+      <option value="icu">ICU Patient</option>
+      <option value="highrisk">High-Risk Immobile</option>
+    </select>
+    <div class="speed-seg" id="speedSeg">
+      <button data-speed="1" class="active">1×</button><button data-speed="5">5×</button><button data-speed="10">10×</button>
+    </div>
+    <div class="hdr-group"><button class="btn btn-primary" id="startBtn">▶ Start</button><button class="btn btn-ghost" id="resetBtn">↺ Reset</button></div>
+    <button class="btn btn-demo" id="demoBtn">◈ Expo Demo Mode</button>
+  </div>
+</header>
+
+<div class="layout">
+
+  <div class="col">
+    <div class="card">
+      <div class="card-title"><span class="dot"></span>Patient</div>
+      <div class="patient-id">
+        <div class="avatar" id="patAvatar">EV</div>
+        <div><div class="pid-name" id="patName">Eleanor Voss</div><div class="pid-mrn" id="patMrn">MRN-30871</div></div>
+      </div>
+      <div class="chips" id="patChips"></div>
+      <div style="margin-top:11px;">
+        <div class="field-row"><span class="k">Age</span><span class="v" id="fAge">—</span></div>
+        <div class="field-row"><span class="k">Weight</span><span class="v" id="fWeight">—</span></div>
+        <div class="field-row"><span class="k">Mobility</span><span class="v" id="fMobility">—</span></div>
+        <div class="field-row"><span class="k">Diabetic</span><span class="v" id="fDiabetic">—</span></div>
+        <div class="field-row"><span class="k">Existing Ulcer</span><span class="v" id="fUlcer">—</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="dot"></span>Relievia AI Status</div>
+      <div class="ai-status-row" id="aiStatusRow">
+        <div class="pulse"></div>
+        <div><div class="txt" id="aiStatusTxt">Monitoring</div><div class="sub" id="aiStatusSub">All pressure zones nominal</div></div>
+      </div>
+      <div style="font-size:11px;color:var(--text-faint);" id="scenarioLabel">Scenario: —</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="dot"></span>Vitals</div>
+      <div class="vitals-grid">
+        <div class="vital-box"><div class="vlabel">Heart Rate</div><div class="vval" id="vHr">— bpm</div></div>
+        <div class="vital-box"><div class="vlabel">SpO₂</div><div class="vval" id="vSpo2">—%</div></div>
+      </div>
+      <div class="ecg-wrap">
+        <svg viewBox="0 0 400 34" preserveAspectRatio="none">
+          <polyline points="0,17 20,17 30,17 36,5 42,29 48,17 60,17 90,17 100,17 106,5 112,29 118,17 130,17 160,17 170,17 176,5 182,29 188,17 200,17 220,17 230,17 236,5 242,29 248,17 260,17 290,17 300,17 306,5 312,29 318,17 330,17 360,17 370,17 376,5 382,29 388,17 400,17"
+                    fill="none" stroke="#3ECF8E" stroke-width="1.6"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <div class="col" style="overflow:visible;">
+    <div class="sim-panel">
+      <div class="sim-topbar">
+        <div><h2>3D Hospital Bed Simulation</h2><div class="scenario-name">Relievia Model R2 · Motorized Pressure-Relief Platform</div></div>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <div class="tilt-readout">Tilt: <b id="tiltReadout">0°</b></div>
+          <div class="posture-badge"><span class="ic">◍</span><span id="postureBadge">Supine</span></div>
+          <div class="cam-seg" id="camSeg">
+            <button data-cam="side" class="active">Side</button><button data-cam="front">Front</button>
+            <button data-cam="top">Top</button><button data-cam="iso">Isometric</button><button data-cam="orbit">Free Orbit</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="sim-stage" id="simStage">
+        <canvas id="mainCanvas"></canvas>
+        <div class="patient-key">
+          <span><span class="sw" style="background:#F4F5F6"></span>Wireframe mesh</span>
+          <span><span class="sw" style="background:#E4484F"></span>Live pulse</span>
+        </div>
+        <div class="heat-legend" id="heatLegend">
+          <span><span class="sw" style="background:#3ECF8E"></span>Safe</span>
+          <span><span class="sw" style="background:#E8C547"></span>Moderate</span>
+          <span><span class="sw" style="background:#E8873F"></span>High</span>
+          <span><span class="sw" style="background:#E0464F"></span>Critical</span>
+        </div>
+        <div class="drag-hint" id="dragHint">Drag to orbit</div>
+
+        <div class="alert-banner" id="alertBanner">
+          <div class="aicon">⚠</div>
+          <div>
+            <div class="atitle">Pressure Accumulation Detected</div>
+            <div class="adetail"><span>Zone: <b id="alertRegion">—</b></span><span>Pressure: <b id="alertPressure">—</b></span><span>Risk: <b id="alertRisk">—</b></span></div>
+          </div>
+        </div>
+
+        <div class="repo-progress" id="repoProgress">
+          <span class="lbl">Autonomous Repositioning</span>
+          <div class="repo-track"><div class="repo-fill" id="repoFill"></div></div>
+          <span class="lbl" id="repoPct">0%</span>
+        </div>
+
+        <div class="relief-toast" id="reliefToast">
+          <div class="rt-title">✓ Pressure Relief Confirmed</div>
+          <div class="rt-row"><span>Peak Zone</span><span class="arrow" id="reliefZoneName">—</span></div>
+          <div class="rt-row"><span>Zone Pressure</span><span class="arrow" id="reliefZoneVal">—</span></div>
+          <div class="rt-row"><span>Risk Score</span><span class="arrow" id="reliefRiskVal">—</span></div>
+        </div>
+
+        <div class="reason-panel" id="reasonPanel">
+          <div class="rp-title"><span class="spin"></span>Relievia AI — Evaluating Repositioning Options</div>
+          <div class="rp-options" id="rpOptions"></div>
+          <div class="rp-footer"><span>Selected Position: <span class="sel-tag" id="rpSelected">—</span></span><span>Expected Risk Reduction: <span class="sel-tag" id="rpReduction">—</span></span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col">
+    <div class="card">
+      <div class="card-title" style="justify-content:space-between;display:flex;align-items:center;">
+        <span><span class="dot"></span>Pressure Ulcer Risk</span>
+        <span id="mlStatusBadge" class="ml-badge offline" title="ML Backend: Offline (running local simulation)">ML Risk: Offline</span>
+      </div>
+      <div class="gauge-wrap">
+        <svg width="176" height="98" viewBox="0 0 180 100">
+          <path d="M10,95 A80,80 0 0,1 170,95" fill="none" stroke="#2B2F33" stroke-width="14" stroke-linecap="round"/>
+          <path id="gaugeArc" d="M10,95 A80,80 0 0,1 170,95" fill="none" stroke="#3ECF8E" stroke-width="14" stroke-linecap="round" stroke-dasharray="251.3" stroke-dashoffset="251.3" style="transition:stroke-dashoffset .6s ease, stroke .6s ease;"/>
+        </svg>
+        <div class="gauge-num" id="gaugeNum">18</div>
+        <div class="gauge-cat" id="gaugeCat" style="background:var(--safe-bg);color:var(--safe);">LOW</div>
+        <div class="ml-subnote" id="mlSubnote">Prototype ML Model · Non-clinical</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="dot"></span>Digital Twin</div>
+      <div class="twin-mini">
+        <div class="twin-canvas-wrap"><canvas id="twinCanvas"></canvas></div>
+        <div class="twin-facts">
+          <div class="tf-row"><span class="k">Posture</span><span class="v" id="twinPosture">Supine</span></div>
+          <div class="tf-row"><span class="k">Risk Level</span><span class="v" id="twinRiskLevel">Low</span></div>
+          <div class="tf-row"><span class="k">Predicted Hotspot</span><span class="v" id="twinHotspot">—</span></div>
+          <div class="tf-row"><span class="k">Sync</span><span class="v" style="color:var(--safe);">● Live</span></div>
+        </div>
+      </div>
+      <div class="reco-box" id="recoBox">Continue routine monitoring. No repositioning required at this time.</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="dot"></span>Risk Forecast</div>
+      <div class="forecast-row">
+        <div class="forecast-box"><div class="flabel">+30 min</div><div class="fval" id="f30">—</div><div class="ftrend" id="f30t"></div></div>
+        <div class="forecast-box"><div class="flabel">+60 min</div><div class="fval" id="f60">—</div><div class="ftrend" id="f60t"></div></div>
+        <div class="forecast-box"><div class="flabel">+120 min</div><div class="fval" id="f120">—</div><div class="ftrend" id="f120t"></div></div>
+      </div>
+      <div class="chart-wrap">
+        <svg id="riskChart" viewBox="0 0 300 78" preserveAspectRatio="none">
+          <line x1="0" y1="20" x2="300" y2="20" stroke="#232629" stroke-width="1"/><line x1="0" y1="50" x2="300" y2="50" stroke="#232629" stroke-width="1"/>
+          <polyline id="chartLine" points="" fill="none" stroke="#E4484F" stroke-width="2"/>
+          <polygon id="chartFill" points="" fill="#E4484F" opacity="0.10"/>
+        </svg>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="dot"></span>Analytics</div>
+      <div class="kpi-grid">
+        <div class="kpi-box"><div class="klabel">Position</div><div class="kval" id="kPosition">Supine</div></div>
+        <div class="kpi-box"><div class="klabel">Current Risk</div><div class="kval" id="kRisk">18</div></div>
+        <div class="kpi-box"><div class="klabel">Predicted (60m)</div><div class="kval" id="kPredicted">—</div></div>
+        <div class="kpi-box"><div class="klabel">Duration</div><div class="kval" id="kDuration">0h 00m</div></div>
+        <div class="kpi-box"><div class="klabel">Interventions</div><div class="kval" id="kInterventions">0</div></div>
+        <div class="kpi-box"><div class="klabel">Highest Risk</div><div class="kval" id="kHighest">18</div></div>
+        <div class="kpi-box"><div class="klabel">Average Risk</div><div class="kval" id="kAverage">18</div></div>
+        <div class="kpi-box"><div class="klabel">Trend</div><div class="kval" id="kTrend">→</div></div>
+      </div>
+    </div>
+
+    <div class="card"><div class="card-title"><span class="dot"></span>Position History</div><ul class="history-list" id="positionHistory"></ul></div>
+    <div class="card"><div class="card-title"><span class="dot"></span>Repositioning History</div><ul class="history-list" id="interventionHistory"><li style="color:var(--text-faint);">No interventions yet</li></ul></div>
+    <div class="card"><div class="card-title"><span class="dot"></span>Event Timeline</div><ul class="timeline" id="eventTimeline"></ul></div>
+
+    <div class="footer-tagline">Relievia · Autonomous Smart Bed with Digital Twin Technology</div>
+  </div>
+
+</div>
+
+<script>
+(function(){
+
+/* =========================================================================
+   THREE.JS 3D SCENE — real wireframe humanoid geometry lying on a 3D bed
+   ========================================================================= */
+
+const RCOL_WHITE = 0xFFFFFF;
+
+const scene = new THREE.Scene();
+
+// ---- tween manager (simple, dependency-free) ----
+const tweens = [];
+function easeInOutCubic(t){ return t<0.5 ? 4*t*t*t : 1-Math.pow(-2*t+2,3)/2; }
+function tween(obj, prop, to, duration, onDone){
+  const from = obj[prop];
+  tweens.push({obj, prop, from, to, start: performance.now(), duration, onDone});
+}
+function updateTweens(now){
+  for(let i=tweens.length-1;i>=0;i--){
+    const t = tweens[i];
+    const p = Math.min((now - t.start)/t.duration, 1);
+    const e = easeInOutCubic(p);
+    t.obj[t.prop] = t.from + (t.to - t.from)*e;
+    if(p>=1){ if(t.onDone) t.onDone(); tweens.splice(i,1); }
+  }
+}
+
+// ---- capsule helper: builds a Group (cylinder + 2 sphere caps) between two points ----
+function makeCapsuleGeometry(p1, p2, radius, segments){
+  segments = segments || 12;
+  const dir = new THREE.Vector3().subVectors(p2, p1);
+  const len = dir.length();
+  const cylGeo = new THREE.CylinderGeometry(radius, radius, len, segments, 4, true);
+  const mid = new THREE.Vector3().addVectors(p1, p2).multiplyScalar(0.5);
+  const quat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,1,0), dir.clone().normalize());
+  cylGeo.applyMatrix4(new THREE.Matrix4().makeRotationFromQuaternion(quat));
+  cylGeo.translate(mid.x, mid.y, mid.z);
+  return cylGeo;
+}
+
+function bodyPart(p1, p2, radius, segments){
+  segments = segments || 12;
+  const group = new THREE.Group();
+  const cylGeo = makeCapsuleGeometry(p1, p2, radius, segments);
+  const sph1 = new THREE.SphereGeometry(radius, segments, Math.max(6, segments/2));
+  sph1.translate(p1.x, p1.y, p1.z);
+  const sph2 = new THREE.SphereGeometry(radius, segments, Math.max(6, segments/2));
+  sph2.translate(p2.x, p2.y, p2.z);
+  const merged = mergeGeoms([cylGeo, sph1, sph2]);
+  const matWhite = new THREE.MeshBasicMaterial({color:RCOL_WHITE, wireframe:true, transparent:true, opacity:0.9});
+  const meshWhite = new THREE.Mesh(merged, matWhite);
+  group.add(meshWhite);
+  group.userData.pulseMats = [matWhite];
+  return group;
+}
+function sphereBodyPart(center, radius, segments){
+  segments = segments || 14;
+  const geo = new THREE.SphereGeometry(radius, segments, Math.max(6,segments/2));
+  geo.translate(center.x, center.y, center.z);
+  const group = new THREE.Group();
+  const matWhite = new THREE.MeshBasicMaterial({color:RCOL_WHITE, wireframe:true, transparent:true, opacity:0.9});
+  const meshWhite = new THREE.Mesh(geo, matWhite);
+  group.add(meshWhite);
+  group.userData.pulseMats = [matWhite];
+  return group;
+}
+// minimal geometry merge (avoids needing BufferGeometryUtils)
+function mergeGeoms(geoms){
+  const positions = [], normals = [], indices = [];
+  let vOffset = 0;
+  geoms.forEach(g=>{
+    const pos = g.attributes.position, norm = g.attributes.normal;
+    for(let i=0;i<pos.count;i++){ positions.push(pos.getX(i),pos.getY(i),pos.getZ(i)); normals.push(norm.getX(i),norm.getY(i),norm.getZ(i)); }
+    if(g.index){ for(let i=0;i<g.index.count;i++){ indices.push(g.index.getX(i)+vOffset); } }
+    else { for(let i=0;i<pos.count;i++){ indices.push(i+vOffset); } }
+    vOffset += pos.count;
+  });
+  const merged = new THREE.BufferGeometry();
+  merged.setAttribute('position', new THREE.Float32BufferAttribute(positions,3));
+  merged.setAttribute('normal', new THREE.Float32BufferAttribute(normals,3));
+  merged.setIndex(indices);
+  return merged;
+}
+
+const allPulseMats = [];
+function registerPulse(group){ if(group.userData.pulseMats) allPulseMats.push(...group.userData.pulseMats); }
+
+// ---- BED (static frame never rotates; tilt group carries mattress + patient) ----
+const bedStatic = new THREE.Group();
+const bedTiltGroup = new THREE.Group();
+scene.add(bedStatic, bedTiltGroup);
+
+const matFrame = new THREE.MeshStandardMaterial({color:0x2c2f33, metalness:0.4, roughness:0.55});
+const matFrameLight = new THREE.MeshStandardMaterial({color:0x3a3e42, metalness:0.35, roughness:0.5});
+const matMattress = new THREE.MeshStandardMaterial({color:0x40454a, roughness:0.75});
+const matWheel = new THREE.MeshStandardMaterial({color:0x3a3e42, metalness:0.6, roughness:0.4});
+
+function box(w,h,d,mat,x,y,z){ const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d), mat); m.position.set(x,y,z); return m; }
+function cyl(r1,r2,h,mat,x,y,z,rx,rz){ const m=new THREE.Mesh(new THREE.CylinderGeometry(r1,r2,h,16), mat); m.position.set(x,y,z); if(rx) m.rotation.x=rx; if(rz) m.rotation.z=rz; return m; }
+
+// deck + legs + wheels + headboard/footboard — all static
+bedStatic.add(box(5.7,0.14,1.75, matFrameLight, 0,0.05,0));
+bedStatic.add(box(5.8,0.10,1.85, matFrame, 0,-0.55,0));
+bedStatic.add(box(0.16,1.35,1.85, matFrame, -3.0,0.7,0));
+bedStatic.add(box(0.16,1.15,1.85, matFrame, 3.0,0.6,0));
+function scissor(xCenter){
+  const g = new THREE.Group();
+  g.add(cyl(0.035,0.035,1.05, matFrameLight, xCenter-0.55,-0.25,0.55, 0, Math.PI/4.1));
+  g.add(cyl(0.035,0.035,1.05, matFrameLight, xCenter+0.55,-0.25,0.55, 0, -Math.PI/4.1));
+  g.add(cyl(0.035,0.035,1.05, matFrameLight, xCenter-0.55,-0.25,-0.55, 0, Math.PI/4.1));
+  g.add(cyl(0.035,0.035,1.05, matFrameLight, xCenter+0.55,-0.25,-0.55, 0, -Math.PI/4.1));
+  return g;
+}
+bedStatic.add(scissor(-1.3));
+bedStatic.add(scissor(1.3));
+function wheelSet(x,z){ const w = cyl(0.13,0.13,0.09, matWheel, x, -0.72, z, Math.PI/2, 0); return w; }
+bedStatic.add(wheelSet(-2.55,0.75), wheelSet(-2.55,-0.75), wheelSet(2.55,0.75), wheelSet(2.55,-0.75));
+
+// mattress + pillow — inside the tilt group
+bedTiltGroup.add(box(5.55,0.3,1.65, matMattress, 0,0.42,0));
+const pillow = box(1.0,0.2,1.25, new THREE.MeshStandardMaterial({color:0x33373b, roughness:0.8}), -2.35,0.62,0);
+pillow.rotation.z = -0.03;
+bedTiltGroup.add(pillow);
+
+// contact shadow (fake, simple dark plane under bed)
+const shadowMat = new THREE.MeshBasicMaterial({color:0x000000, transparent:true, opacity:0.35});
+const shadowMesh = new THREE.Mesh(new THREE.CircleGeometry(3.4,32), shadowMat);
+shadowMesh.rotation.x = -Math.PI/2; shadowMesh.position.set(0,-0.82,0);
+scene.add(shadowMesh);
+
+// mattress edge highlight so it reads clearly against the dark background
+const mattressEdges = new THREE.LineSegments(
+  new THREE.EdgesGeometry(new THREE.BoxGeometry(5.55,0.3,1.65)),
+  new THREE.LineBasicMaterial({color:0x6a6f74})
+);
+mattressEdges.position.set(0,0.42,0);
+bedTiltGroup.add(mattressEdges);
+
+// lights (subtle, for the solid bed geometry — wireframe patient ignores lighting)
+scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+const dl1 = new THREE.DirectionalLight(0xffffff, 0.55); dl1.position.set(3,5,4); scene.add(dl1);
+const dl2 = new THREE.DirectionalLight(0xffffff, 0.3); dl2.position.set(-3,3,-4); scene.add(dl2);
+
+/* ---- PATIENT: full anatomical capsule rig, wireframe, solid white pulse ---- */
+const patientGroup = new THREE.Group();
+// Rotation pivot lives at the body's own centerline height (not the world/ground
+// origin) so a posture turn rotates the body about itself instead of swinging it
+// through the mattress on a wide arc.
+const PIVOT_Y = 0.74;
+patientGroup.position.set(0, PIVOT_Y, 0);
+bedTiltGroup.add(patientGroup);
+
+// V() takes coordinates in the same "world-ish" space the rig was originally
+// authored in, then re-expresses them relative to the new pivot height. A tiny
+// per-part lift (li) compensates for the extra sideways swing that limbs with a
+// wide lateral (z) offset pick up during rotation, so nothing dips into the
+// mattress even at the extremes of a lateral turn.
+const V = (x,y,z,lift)=> new THREE.Vector3(x, y - PIVOT_Y + (lift||0), z);
+
+const rig = {};
+rig.head = sphereBodyPart(V(-2.32,0.86,0), 0.20, 16);
+rig.neck = bodyPart(V(-2.14,0.80,0), V(-1.98,0.72,0), 0.12);
+rig.chest = bodyPart(V(-1.92,0.78,0), V(-1.35,0.74,0), 0.25);
+rig.abdomen = bodyPart(V(-1.35,0.74,0), V(-0.55,0.70,0), 0.21);
+
+rig.armR_upper = bodyPart(V(-1.80,0.76,0.33,0.07), V(-1.20,0.66,0.30,0.07), 0.095);
+rig.armR_fore  = bodyPart(V(-1.20,0.66,0.30,0.05), V(-0.78,0.64,0.13,0.05), 0.078);
+rig.handR = sphereBodyPart(V(-0.72,0.64,0.08,0.03), 0.075, 10);
+
+rig.armL_upper = bodyPart(V(-1.80,0.76,-0.33,0.07), V(-1.20,0.66,-0.30,0.07), 0.095);
+rig.armL_fore  = bodyPart(V(-1.20,0.66,-0.30,0.05), V(-0.78,0.64,-0.13,0.05), 0.078);
+rig.handL = sphereBodyPart(V(-0.72,0.64,-0.08,0.03), 0.075, 10);
+
+rig.legR_thigh = bodyPart(V(-0.52,0.70,0.17,0.02), V(0.78,0.68,0.17,0.02), 0.145);
+rig.legR_shin  = bodyPart(V(0.78,0.68,0.17,0.02), V(1.95,0.66,0.17,0.02), 0.105);
+rig.footR = bodyPart(V(1.95,0.66,0.17,0.02), V(2.24,0.72,0.17,0.02), 0.075);
+
+rig.legL_thigh = bodyPart(V(-0.52,0.70,-0.17,0.02), V(0.78,0.68,-0.17,0.02), 0.145);
+rig.legL_shin  = bodyPart(V(0.78,0.68,-0.17,0.02), V(1.95,0.66,-0.17,0.02), 0.105);
+rig.footL = bodyPart(V(1.95,0.66,-0.17,0.02), V(2.24,0.72,-0.17,0.02), 0.075);
+
+// sub-groups so limb-level posture articulation is possible if extended later
+const torsoGroup = new THREE.Group(); torsoGroup.add(rig.head, rig.neck, rig.chest, rig.abdomen);
+const armRGroup = new THREE.Group(); armRGroup.add(rig.armR_upper, rig.armR_fore, rig.handR);
+const armLGroup = new THREE.Group(); armLGroup.add(rig.armL_upper, rig.armL_fore, rig.handL);
+const legRGroup = new THREE.Group(); legRGroup.add(rig.legR_thigh, rig.legR_shin, rig.footR);
+const legLGroup = new THREE.Group(); legLGroup.add(rig.legL_thigh, rig.legL_shin, rig.footL);
+patientGroup.add(torsoGroup, armRGroup, armLGroup, legRGroup, legLGroup);
+
+Object.values(rig).forEach(registerPulse);
+
+// ---- pressure zone markers (children of patientGroup — auto-follow posture rotation) ----
+const ZONE_POINTS = {
+  head:       V(-2.32,0.90,0),
+  lshoulder:  V(-1.80,0.78,-0.33),
+  rshoulder:  V(-1.80,0.78,0.33),
+  upperback:  V(-1.55,0.76,0),
+  lowerback:  V(-0.90,0.72,0),
+  lhip:       V(-0.55,0.72,-0.17),
+  rhip:       V(-0.55,0.72,0.17),
+  lleg:       V(1.0,0.70,-0.17,0.02),
+  rleg:       V(1.0,0.70,0.17,0.02),
+  heels:      V(1.95,0.68,0,0.02),
+};
+const heatMarkers = {};
+Object.keys(ZONE_POINTS).forEach(k=>{
+  const p = ZONE_POINTS[k];
+  const geo = new THREE.SphereGeometry(0.075, 12, 10);
+  const mat = new THREE.MeshBasicMaterial({color:0x3ECF8E, transparent:true, opacity:0.85});
+  const m = new THREE.Mesh(geo, mat);
+  m.position.copy(p);
+  patientGroup.add(m);
+  heatMarkers[k] = m;
+});
+
+/* =========================================================================
+   RENDERERS + CAMERAS
+   ========================================================================= */
+const mainCanvas = document.getElementById('mainCanvas');
+const mainRenderer = new THREE.WebGLRenderer({canvas:mainCanvas, antialias:true, alpha:true});
+mainRenderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+
+const mainCamera = new THREE.PerspectiveCamera(42, 1, 0.1, 100);
+const BED_TARGET = new THREE.Vector3(0,0.4,0);
+
+const twinCanvas = document.getElementById('twinCanvas');
+const twinRenderer = new THREE.WebGLRenderer({canvas:twinCanvas, antialias:true, alpha:true});
+const twinCamera = new THREE.PerspectiveCamera(38, 1, 0.1, 100);
+twinCamera.position.set(0.4, 6.2, 0.01);
+twinCamera.lookAt(0,0.35,0);
+
+function resizeRenderers(){
+  const stage = document.getElementById('simStage');
+  const w = stage.clientWidth, h = stage.clientHeight;
+  mainRenderer.setSize(w, h, false);
+  mainCamera.aspect = w/Math.max(h,1);
+  mainCamera.updateProjectionMatrix();
+  const tw = twinCanvas.clientWidth || 96, th = twinCanvas.clientHeight || 78;
+  twinRenderer.setSize(tw, th, false);
+  twinCamera.aspect = tw/Math.max(th,1);
+  twinCamera.updateProjectionMatrix();
+}
+window.addEventListener('resize', resizeRenderers);
+
+/* ---- camera presets + manual orbit drag ---- */
+const CAM_PRESETS = {
+  side:  {pos:[0, 1.3, 9.0],  fov:40},
+  front: {pos:[7.6, 2.3, 5.6], fov:40},
+  top:   {pos:[0.1, 9.6, 0.01],fov:40},
+  iso:   {pos:[6.4, 4.6, 6.4], fov:38},
+};
+let orbitMode = false, orbitAz = Math.atan2(6.4,6.4), orbitEl = 0.6, orbitDist = 9.5;
+let dragging=false, lastPX=0, lastPY=0;
+
+function setCamera(name){
+  [...document.getElementById('camSeg').children].forEach(b=>b.classList.toggle('active', b.dataset.cam===name));
+  document.getElementById('dragHint').classList.toggle('show', name==='orbit');
+  orbitMode = (name==='orbit');
+  if(orbitMode){
+    orbitAz = Math.atan2(6.4,6.4); orbitEl = 0.55; orbitDist = 9.5;
+    applyOrbitCamera();
+  } else {
+    const preset = CAM_PRESETS[name];
+    mainCamera.fov = preset.fov; mainCamera.updateProjectionMatrix();
+    mainCamera.position.set(preset.pos[0], preset.pos[1], preset.pos[2]);
+    mainCamera.lookAt(BED_TARGET);
+  }
+}
+function applyOrbitCamera(){
+  const x = BED_TARGET.x + orbitDist*Math.cos(orbitEl)*Math.sin(orbitAz);
+  const y = BED_TARGET.y + orbitDist*Math.sin(orbitEl);
+  const z = BED_TARGET.z + orbitDist*Math.cos(orbitEl)*Math.cos(orbitAz);
+  mainCamera.fov = 38; mainCamera.updateProjectionMatrix();
+  mainCamera.position.set(x,y,z);
+  mainCamera.lookAt(BED_TARGET);
+}
+document.getElementById('camSeg').addEventListener('click', e=>{ const btn=e.target.closest('button'); if(!btn) return; setCamera(btn.dataset.cam); });
+mainCanvas.addEventListener('pointerdown', e=>{ if(!orbitMode) return; dragging=true; lastPX=e.clientX; lastPY=e.clientY; mainCanvas.classList.add('dragging'); });
+window.addEventListener('pointermove', e=>{
+  if(!dragging) return;
+  const dx=e.clientX-lastPX, dy=e.clientY-lastPY; lastPX=e.clientX; lastPY=e.clientY;
+  orbitAz -= dx*0.006; orbitEl = Math.max(0.08, Math.min(1.45, orbitEl + dy*0.005));
+  applyOrbitCamera();
+});
+window.addEventListener('pointerup', ()=>{ dragging=false; mainCanvas.classList.remove('dragging'); });
+mainCanvas.addEventListener('wheel', e=>{ if(!orbitMode) return; e.preventDefault(); orbitDist=Math.max(4.5,Math.min(15,orbitDist+e.deltaY*0.004)); applyOrbitCamera(); }, {passive:false});
+
+setCamera('side');
+
+/* =========================================================================
+   SIMULATION ENGINE (scenarios, pressure/risk, AI evaluation, analytics)
+   ========================================================================= */
+const SCENARIOS = {
+  healthy:  {label:'Healthy Adult',        name:'James Whitfield', mrn:'MRN-48213', age:34, weight:72, mobility:'Independent', diabetic:false, ulcer:false, mult:0.55},
+  elderly:  {label:'Elderly Patient',      name:'Eleanor Voss',    mrn:'MRN-30871', age:81, weight:64, mobility:'Limited',     diabetic:false, ulcer:false, mult:1.05},
+  diabetic: {label:'Diabetic Patient',     name:'Marcus Ibe',      mrn:'MRN-55290', age:58, weight:89, mobility:'Limited',     diabetic:true,  ulcer:false, mult:1.25},
+  icu:      {label:'ICU Patient',          name:'Priya Anand',     mrn:'MRN-61042', age:66, weight:70, mobility:'Bedbound',    diabetic:false, ulcer:false, mult:1.45},
+  highrisk: {label:'High-Risk Immobile',   name:'Robert Aldana',   mrn:'MRN-77129', age:77, weight:58, mobility:'Bedbound',    diabetic:true,  ulcer:true,  mult:1.85},
+};
+const ZONES = [
+  {id:'head',      label:'Head',          supine:0.45, left:0.40, right:0.40},
+  {id:'lshoulder', label:'Left Shoulder', supine:0.50, left:1.30, right:0.30},
+  {id:'rshoulder', label:'Right Shoulder',supine:0.50, left:0.30, right:1.30},
+  {id:'upperback', label:'Upper Back',    supine:1.15, left:0.40, right:0.40},
+  {id:'lowerback', label:'Lower Back',    supine:1.25, left:0.40, right:0.40},
+  {id:'lhip',      label:'Left Hip',      supine:1.05, left:1.40, right:0.30},
+  {id:'rhip',      label:'Right Hip',     supine:1.05, left:0.30, right:1.40},
+  {id:'lleg',      label:'Left Leg',      supine:0.45, left:0.55, right:0.35},
+  {id:'rleg',      label:'Right Leg',     supine:0.45, left:0.35, right:0.55},
+  {id:'heels',     label:'Heels',         supine:1.15, left:0.30, right:0.30},
+];
+const SPEED_MAP = {1:1,5:5,10:10};
+const TICK_MS = 550;
+const RISK_THRESHOLD = 75;
+const MAX_TILT_RAD = 0.13; // ~7.5 degrees — small controlled medical tilt
+const POSTURE_ANGLE = {supine:0, left:-0.42, right:0.42}; // radians (~24°), clinically realistic lateral tilt, calibrated to clear the mattress
+
+let state = null;
+function freshState(scenarioKey){
+  const sc = SCENARIOS[scenarioKey];
+  const pressure = {};
+  ZONES.forEach((z,i)=>{ pressure[z.id] = 14 + (i%4)*2; });
+  return { scenarioKey, sc, posture:'supine', pressure, phase:'monitoring', running:false, speed:1,
+    elapsedMin:0, timeInPosture:0, riskScore:0, riskHistory:[], highestRisk:0, riskSum:0, riskCount:0,
+    interventions:0, alertedZones:new Set(), criticalLogged:false, positionHistory:[], interventionHistory:[] };
+}
+function computeFactors(sc){ let f=0; if(sc.age>=75)f+=8; else if(sc.age>=60)f+=4; if(sc.diabetic)f+=9; if(sc.ulcer)f+=14; if(sc.mobility==='Bedbound')f+=11; else if(sc.mobility==='Limited')f+=5; return f; }
+function weightedPressure(posture,pressure){ let s=0,w=0; ZONES.forEach(z=>{ s+=pressure[z.id]*z[posture]; w+=z[posture]; }); return s/w; }
+function clamp(v,a,b){ return Math.max(a,Math.min(b,v)); }
+function pressureColor(p){ if(p<38) return 0x3ECF8E; if(p<58) return 0xE8C547; if(p<78) return 0xE8873F; return 0xE0464F; }
+function pressureColorCss(p){ if(p<38) return '#3ECF8E'; if(p<58) return '#E8C547'; if(p<78) return '#E8873F'; return '#E0464F'; }
+function riskCategory(r){ if(r<35) return {label:'LOW',color:'var(--safe)',bg:'var(--safe-bg)'}; if(r<60) return {label:'MODERATE',color:'var(--moderate)',bg:'var(--moderate-bg)'}; if(r<80) return {label:'HIGH',color:'var(--high)',bg:'var(--high-bg)'}; return {label:'CRITICAL',color:'var(--critical)',bg:'var(--critical-bg)'}; }
+function fmtClock(mins){ let total=8*60+Math.floor(mins); total=total%(24*60); const h=Math.floor(total/60),m=total%60; return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0'); }
+function fmtDuration(mins){ const h=Math.floor(mins/60), m=Math.floor(mins%60); return h+'h '+String(m).padStart(2,'0')+'m'; }
+
+const $ = id => document.getElementById(id);
+const clockReadout=$('clockReadout'), startBtn=$('startBtn'), resetBtn=$('resetBtn'), demoBtn=$('demoBtn');
+const scenarioSelect=$('scenarioSelect'), speedSeg=$('speedSeg');
+
+function init(scenarioKey){
+  state = freshState(scenarioKey);
+  scenarioSelect.value = scenarioKey;
+  renderPatientCard();
+  applyPostureVisual(state.posture, true);
+  setTilt(0, true);
+  hideOverlays(); clearTimelineDOM(); clearHistoryDOM();
+  logTimeline('Monitoring session started for '+state.sc.name, 'ok');
+  logPosition();
+  computeAndRender();
+  predictRiskFromML().then(mlData => {
+    if(mlData && typeof mlData.risk_probability === 'number'){
+      computeAndRender(mlData.risk_probability);
+    }
+  });
+  startBtn.textContent='▶ Start'; startBtn.classList.remove('active');
+}
+function renderPatientCard(){
+  const sc=state.sc;
+  $('patName').textContent=sc.name; $('patMrn').textContent=sc.mrn;
+  $('patAvatar').textContent=sc.name.split(' ').map(w=>w[0]).slice(0,2).join('');
+  $('fAge').textContent=sc.age; $('fWeight').textContent=sc.weight+' kg'; $('fMobility').textContent=sc.mobility;
+  $('fDiabetic').textContent=sc.diabetic?'Yes':'No'; $('fUlcer').textContent=sc.ulcer?'Yes':'No';
+  $('scenarioLabel').textContent='Scenario: '+sc.label;
+  const chipsEl=$('patChips'); chipsEl.innerHTML='';
+  const chips=[]; chips.push([sc.mobility, sc.mobility==='Bedbound'?'crit':(sc.mobility==='Limited'?'warn':'')]);
+  if(sc.diabetic) chips.push(['Diabetic','warn']); if(sc.ulcer) chips.push(['Existing Ulcer','crit']); if(sc.age>=75) chips.push(['Age '+sc.age,'']);
+  chips.forEach(([txt,cls])=>{ const s=document.createElement('span'); s.className='chip'+(cls?' '+cls:''); s.textContent=txt; chipsEl.appendChild(s); });
+}
+function hideOverlays(){ $('alertBanner').classList.remove('show'); $('reasonPanel').classList.remove('show'); $('repoProgress').classList.remove('show'); $('reliefToast').classList.remove('show'); }
+function clearTimelineDOM(){ $('eventTimeline').innerHTML=''; }
+function clearHistoryDOM(){ $('positionHistory').innerHTML=''; $('interventionHistory').innerHTML='<li style="color:var(--text-faint);">No interventions yet</li>'; }
+
+function setTilt(rad, instant){
+  if(instant){ bedTiltGroup.rotation.x = rad; }
+  else { tween(bedTiltGroup.rotation, 'x', rad, 1500); }
+  $('tiltReadout').textContent = Math.round(rad*180/Math.PI)+'°';
+}
+function applyPostureVisual(posture, instant){
+  const angle = POSTURE_ANGLE[posture];
+  if(instant){ patientGroup.rotation.x = angle; }
+  else { tween(patientGroup.rotation, 'x', angle, 1500); }
+  const label = posture==='left'?'Left Lateral':posture==='right'?'Right Lateral':'Supine';
+  $('postureBadge').textContent = label; $('twinPosture').textContent = label;
+}
+
+function renderHeatmap(){
+  Object.keys(heatMarkers).forEach(k=>{
+    const p = state.pressure[k];
+    const m = heatMarkers[k];
+    m.material.color.setHex(pressureColor(p));
+    const scale = 0.6 + p*0.012;
+    m.scale.setScalar(scale);
+  });
+  let worst=null, worstVal=-1;
+  ZONES.forEach(z=>{ const pv=predictedZonePressure(z.id); if(pv>worstVal){worstVal=pv; worst=z;} });
+  $('twinHotspot').textContent = worst ? worst.label+' ('+Math.round(worstVal)+'%)' : '—';
+}
+function predictedZonePressure(zoneId){
+  const z=ZONES.find(zz=>zz.id===zoneId); const w=z[state.posture]; const rate=0.85*w*state.sc.mult; const cur=state.pressure[zoneId];
+  return clamp(cur+rate*15*(1-cur/100)*0.09,0,100);
+}
+
+function logTimeline(text, level){
+  const colors={ok:'#3ECF8E',warn:'#E8C547',high:'#E8873F',crit:'#E0464F',info:'#9AA1A7'};
+  const li=document.createElement('li'); const dot=document.createElement('div'); dot.className='tdot'; dot.style.background=colors[level]||colors.info;
+  const txt=document.createElement('div'); txt.className='ttext'; txt.innerHTML=text+'<span class="ttime">'+fmtClock(state.elapsedMin)+'</span>';
+  li.appendChild(dot); li.appendChild(txt); const list=$('eventTimeline'); list.insertBefore(li,list.firstChild);
+  while(list.children.length>40) list.removeChild(list.lastChild);
+}
+function logPosition(){
+  state.positionHistory.unshift({time:fmtClock(state.elapsedMin), posture:state.posture});
+  const list=$('positionHistory'); list.innerHTML='';
+  state.positionHistory.slice(0,12).forEach(p=>{ const li=document.createElement('li'); const label=p.posture==='left'?'Left Lateral':p.posture==='right'?'Right Lateral':'Supine';
+    li.innerHTML='<span>'+label+'</span><span class="htime">'+p.time+'</span>'; list.appendChild(li); });
+}
+function logIntervention(fromP,toP,riskBefore,riskAfter){
+  state.interventionHistory.unshift({time:fmtClock(state.elapsedMin), from:fromP, to:toP, before:riskBefore, after:riskAfter});
+  const list=$('interventionHistory'); list.innerHTML='';
+  state.interventionHistory.forEach(iv=>{ const li=document.createElement('li'); const toLabel=iv.to==='left'?'Left':iv.to==='right'?'Right':'Supine';
+    li.innerHTML='<span>→ '+toLabel+' <span style="color:var(--text-faint)">('+iv.before+'%→'+iv.after+'%)</span></span><span class="htime">'+iv.time+'</span>'; list.appendChild(li); });
+}
+
+/* =========================================================================
+   RELIEVIA ML BACKEND INTEGRATION (Prototype - Not Clinically Validated)
+   ========================================================================= */
+const ML_ENDPOINT = 'http://127.0.0.1:5000/predict';
+let mlConnected = false;
+let mlRequestInProgress = false;
+let lastMlCallTime = 0;
+const ML_CALL_INTERVAL_MS = 1000; // Throttle to at most 1 query per second during continuous monitoring
+
+function setMlStatus(connected){
+  if(connected !== mlConnected){
+    mlConnected = connected;
+    const badge = $('mlStatusBadge');
+    if(badge){
+      if(connected){
+        badge.textContent = 'ML Risk: Connected';
+        badge.className = 'ml-badge connected';
+        badge.title = 'Connected to Flask ML Backend (prototype model - not clinically validated)';
+        logTimeline('ML risk backend connected (live inference active)', 'ok');
+      } else {
+        badge.textContent = 'ML Risk: Offline';
+        badge.className = 'ml-badge offline';
+        badge.title = 'ML backend unavailable. Running local heuristic simulation.';
+        logTimeline('ML backend unavailable — fallback to local simulation', 'warn');
+      }
+    }
+  }
+}
+
+async function predictRiskFromML(){
+  if(mlRequestInProgress || !state) return null;
+  mlRequestInProgress = true;
+
+  const sc = state.sc;
+  const payload = {
+    age: sc.age,
+    mobility: sc.mobility.toLowerCase(),
+    diabetes: sc.diabetic ? 1 : 0,
+    posture: state.posture,
+    time_in_current_posture: state.timeInPosture,
+    sacral_pressure: Math.round(state.pressure.lowerback || state.pressure.upperback || 0),
+    heel_pressure: Math.round(state.pressure.heels || 0),
+    hip_pressure: Math.round(Math.max(state.pressure.lhip || 0, state.pressure.rhip || 0)),
+    shoulder_pressure: Math.round(Math.max(state.pressure.lshoulder || 0, state.pressure.rshoulder || 0))
+  };
+
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 1200);
+    const res = await fetch(ML_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      signal: controller.signal
+    });
+    clearTimeout(timeoutId);
+
+    if(res.ok){
+      const data = await res.json();
+      setMlStatus(true);
+      return data;
+    } else {
+      setMlStatus(false);
+      return null;
+    }
+  } catch(err){
+    setMlStatus(false);
+    return null;
+  } finally {
+    mlRequestInProgress = false;
+  }
+}
+
+function computeLocalRisk(){
+  const pressureComp = weightedPressure(state.posture, state.pressure);
+  const factors = computeFactors(state.sc);
+  const timeBonus = state.timeInPosture > 90 ? Math.min((state.timeInPosture - 90) * 0.06, 14) : 0;
+  return clamp(Math.round(pressureComp * 0.72 + factors * 0.55 + timeBonus), 0, 100);
+}
+
+function computeAndRender(overrideRisk){
+  let risk;
+  if(typeof overrideRisk === 'number' && !isNaN(overrideRisk)){
+    risk = clamp(Math.round(overrideRisk), 0, 100);
+  } else {
+    risk = computeLocalRisk();
+  }
+  state.riskScore = risk;
+  state.riskHistory.push(risk); if(state.riskHistory.length>60) state.riskHistory.shift();
+  state.highestRisk = Math.max(state.highestRisk, risk); state.riskSum += risk; state.riskCount++;
+  renderHeatmap(); renderGauge(risk); renderForecast(risk); renderChart(); renderKPIs(risk); renderTwinFacts(risk); renderAIStatus();
+  clockReadout.textContent = fmtClock(state.elapsedMin);
+}
+function renderGauge(risk){
+  const c=251.3, offset=c*(1-risk/100), arc=$('gaugeArc'), cat=riskCategory(risk);
+  arc.setAttribute('stroke-dashoffset', offset); arc.style.stroke=getComputedColor(cat.color);
+  $('gaugeNum').textContent=risk; $('gaugeNum').style.color=getComputedColor(cat.color);
+  $('gaugeCat').textContent=cat.label; $('gaugeCat').style.background=getComputedColor(cat.bg); $('gaugeCat').style.color=getComputedColor(cat.color);
+}
+function getComputedColor(v){ if(v.startsWith('var(')){ const n=v.slice(4,-1); return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); } return v; }
+function projectRisk(minutesAhead){
+  const hist=state.riskHistory; let slope=0;
+  if(hist.length>=5) slope=(hist[hist.length-1]-hist[hist.length-5])/5; else if(hist.length>=2) slope=(hist[hist.length-1]-hist[0])/hist.length;
+  let proj=state.riskScore + slope*(minutesAhead/(SPEED_MAP[state.speed]||1))*0.6;
+  if(state.riskScore>=RISK_THRESHOLD-10) proj=Math.min(proj,state.riskScore+6);
+  return clamp(Math.round(proj),0,100);
+}
+function renderForecast(risk){
+  [30,60,120].forEach(m=>{ const p=projectRisk(m); $('f'+m).textContent=p; const el=$('f'+m); const cat=riskCategory(p); el.style.color=getComputedColor(cat.color);
+    const dir = p>risk+2?'▲ rising':p<risk-2?'▼ falling':'● stable'; $('f'+m+'t').textContent=dir; $('f'+m+'t').style.color=getComputedColor(cat.color); });
+  $('kPredicted').textContent=$('f60').textContent;
+}
+function renderChart(){
+  const hist=state.riskHistory.slice(-40); if(hist.length<2){ $('chartLine').setAttribute('points',''); $('chartFill').setAttribute('points',''); return; }
+  const w=300,h=78; const step=w/(hist.length-1); const pts=hist.map((v,i)=>(i*step).toFixed(1)+','+(h-(v/100)*h).toFixed(1));
+  $('chartLine').setAttribute('points',pts.join(' ')); $('chartFill').setAttribute('points','0,'+h+' '+pts.join(' ')+' '+w+','+h);
+}
+function renderKPIs(risk){
+  $('kPosition').textContent = state.posture==='left'?'Left Lateral':state.posture==='right'?'Right Lateral':'Supine';
+  $('kRisk').textContent=risk; $('kDuration').textContent=fmtDuration(state.elapsedMin); $('kInterventions').textContent=state.interventions;
+  $('kHighest').textContent=state.highestRisk; $('kAverage').textContent=state.riskCount?Math.round(state.riskSum/state.riskCount):0;
+  const hist=state.riskHistory; let trend='→'; if(hist.length>=4){ const d=hist[hist.length-1]-hist[hist.length-4]; trend=d>3?'↑ rising':d<-3?'↓ falling':'→ stable'; } $('kTrend').textContent=trend;
+}
+function renderTwinFacts(risk){
+  const cat=riskCategory(risk); $('twinRiskLevel').textContent=cat.label[0]+cat.label.slice(1).toLowerCase();
+  let reco='Continue routine monitoring. No repositioning required at this time.';
+  if(state.phase==='evaluating') reco='Relievia AI is evaluating optimal repositioning strategy.';
+  else if(state.phase==='repositioning') reco='Autonomous repositioning in progress. Standby.';
+  else if(risk>=60) reco='Elevated pressure detected. Recommend proactive repositioning within 15 minutes.';
+  else if(risk>=40) reco='Monitor closely — pressure trending upward in loaded zones.';
+  $('recoBox').textContent=reco;
+}
+function renderAIStatus(){
+  const row=$('aiStatusRow'); row.classList.remove('eval','repo'); let txt='Monitoring', sub='All pressure zones nominal';
+  if(state.phase==='evaluating'){ row.classList.add('eval'); txt='Evaluating'; sub='Comparing candidate postures'; }
+  else if(state.phase==='repositioning'){ row.classList.add('repo'); txt='Repositioning'; sub='Executing controlled bed tilt'; }
+  else if(state.riskScore>=RISK_THRESHOLD-15){ sub='Pressure rising — monitoring closely'; }
+  $('aiStatusTxt').textContent=txt; $('aiStatusSub').textContent=sub;
+}
+
+function tick(){
+  if(!state.running) return;
+  const simMin=SPEED_MAP[state.speed]; state.elapsedMin+=simMin; state.timeInPosture+=simMin;
+  const hr=Math.round(74+Math.sin(state.elapsedMin/6)*5+(state.riskScore>70?8:0)); const spo2=Math.round(98-(state.riskScore>75?2:0));
+  $('vHr').textContent=hr+' bpm'; $('vSpo2').textContent=spo2+'%';
+  window.__hrBpm = hr;
+  if(state.phase==='monitoring'){
+    ZONES.forEach(z=>{ const w=z[state.posture]; const rate=0.85*w*state.sc.mult; const cur=state.pressure[z.id]; const grow=rate*simMin*(1-cur/100)*0.09; state.pressure[z.id]=clamp(cur+grow,0,100); });
+
+    const now = performance.now();
+    if(now - lastMlCallTime > ML_CALL_INTERVAL_MS && !mlRequestInProgress){
+      lastMlCallTime = now;
+      predictRiskFromML().then(mlData => {
+        if(mlData && typeof mlData.risk_probability === 'number'){
+          computeAndRender(mlData.risk_probability);
+        } else {
+          computeAndRender();
+        }
+        checkThresholds();
+      });
+    } else {
+      computeAndRender(state.riskScore);
+      checkThresholds();
+    }
+  }
+}
+function checkThresholds(){
+  let maxZone=null,maxVal=-1; ZONES.forEach(z=>{ if(state.pressure[z.id]>maxVal){maxVal=state.pressure[z.id]; maxZone=z;} });
+  if(maxVal>=60 && !state.alertedZones.has(maxZone.id)){ state.alertedZones.add(maxZone.id); logTimeline('Pressure accumulation detected — <b>'+maxZone.label+'</b>','warn'); showAlert(maxZone.label, Math.round(maxVal), state.riskScore); }
+  if(state.riskScore>=RISK_THRESHOLD && !state.criticalLogged){ state.criticalLogged=true; logTimeline('Risk entered <b>critical range</b> ('+state.riskScore+'%)','crit'); beginEvaluation(); }
+}
+function showAlert(zoneLabel,pressure,risk){ $('alertRegion').textContent=zoneLabel; $('alertPressure').textContent=pressure+'%'; $('alertRisk').textContent=risk+'%'; $('alertBanner').classList.add('show'); }
+function hideAlert(){ $('alertBanner').classList.remove('show'); }
+
+function predictPostureRisk(posture){
+  if(posture===state.posture) return clamp(state.riskScore+3,0,100);
+  const relief = posture==='supine'?0.60:0.32; const factors=computeFactors(state.sc);
+  return clamp(Math.round(state.riskScore*relief + factors*0.18 + (Math.random()*4-2)),5,100);
+}
+function beginEvaluation(){
+  state.phase='evaluating'; hideAlert(); renderAIStatus();
+  const postures=['left','supine','right']; const preds={}; postures.forEach(p=> preds[p]=predictPostureRisk(p));
+  const panel=$('reasonPanel'); const opts=$('rpOptions'); opts.innerHTML=''; const els={};
+  postures.forEach(p=>{ const div=document.createElement('div'); div.className='rp-opt'; const label=p==='left'?'Left Side':p==='right'?'Right Side':'Supine';
+    div.innerHTML='<div class="rp-name"><span>'+label+'</span></div><div class="rp-bar-track"><div class="rp-bar" id="bar-'+p+'"></div></div><div class="rp-risk" id="risk-'+p+'">—</div>';
+    opts.appendChild(div); els[p]=div; });
+  $('rpSelected').textContent='—'; $('rpReduction').textContent='—'; panel.classList.add('show');
+  postures.forEach((p,i)=>{ setTimeout(()=>{ els[p].classList.add('reveal'); const r=preds[p]; const cat=riskCategory(r);
+    document.getElementById('bar-'+p).style.width=r+'%'; document.getElementById('bar-'+p).style.background=getComputedColor(cat.color);
+    document.getElementById('risk-'+p).textContent='Risk = '+r+'%'; document.getElementById('risk-'+p).style.color=getComputedColor(cat.color); }, 380*(i+1)); });
+  setTimeout(()=>{
+    let candidates=postures.filter(p=>p!==state.posture); let best=candidates.reduce((a,b)=> preds[a]<=preds[b]?a:b);
+    if(preds[state.posture] < preds[best]) best=state.posture;
+    els[best].classList.add('selected'); const label=best==='left'?'Left Side':best==='right'?'Right Side':'Supine'; $('rpSelected').textContent=label;
+    const reduction=Math.max(0, state.riskScore-preds[best]); $('rpReduction').textContent=reduction+'%';
+    logTimeline('Relievia AI selected <b>'+label+'</b> posture','info');
+    setTimeout(()=> executeReposition(best, preds[best]), 900);
+  }, 380*postures.length+500);
+}
+
+function executeReposition(targetPosture, predictedRisk){
+  state.phase='repositioning'; renderAIStatus(); $('reasonPanel').classList.remove('show'); logTimeline('Autonomous repositioning initiated','info');
+  const fromPosture=state.posture; const riskBefore=state.riskScore;
+  const tiltSign = targetPosture==='left' ? -1 : targetPosture==='right' ? 1 : (fromPosture==='left' ? 1 : -1);
+  let maxZone=null,maxVal=-1; ZONES.forEach(z=>{ if(state.pressure[z.id]>maxVal){maxVal=state.pressure[z.id]; maxZone=z;} });
+  const beforeZoneVal=Math.round(maxVal);
+  const progWrap=$('repoProgress'); const fill=$('repoFill'); const pct=$('repoPct'); progWrap.classList.add('show'); fill.style.width='0%'; pct.textContent='0%';
+  const STAGE1=900, STAGE2=1500, STAGE3=1600, TOTAL=STAGE1+STAGE2+STAGE3;
+  setTilt(tiltSign*MAX_TILT_RAD, false);
+  setTimeout(()=>{ applyPostureVisual(targetPosture, false); }, STAGE1);
+  setTimeout(()=>{ setTilt(0, false); logTimeline('Bed returning to flat position','info'); }, STAGE1+STAGE2);
+  const startT=performance.now();
+  function animateProgress(now){ const t=clamp((now-startT)/TOTAL,0,1); fill.style.width=Math.round(t*100)+'%'; pct.textContent=Math.round(t*100)+'%'; if(t<1) requestAnimationFrame(animateProgress); }
+  requestAnimationFrame(animateProgress);
+  setTimeout(()=>{
+    state.posture=targetPosture; state.timeInPosture=0; state.alertedZones.clear(); state.criticalLogged=false;
+    ZONES.forEach(z=>{ const prevWeight=z[fromPosture]; const cur=state.pressure[z.id];
+      if(prevWeight>=0.9){ state.pressure[z.id]=clamp(cur*0.30+Math.random()*4,6,100); } else { state.pressure[z.id]=clamp(cur*0.85,4,100); } });
+    predictRiskFromML().then(mlData => {
+      const riskVal = (mlData && typeof mlData.risk_probability === 'number') ? mlData.risk_probability : computeLocalRisk();
+      computeAndRender(riskVal);
+      const riskAfter = state.riskScore;
+      const afterVal = Math.round(state.pressure[maxZone.id]);
+      $('reliefZoneName').textContent = maxZone.label;
+      $('reliefZoneVal').textContent = beforeZoneVal + '% → ' + afterVal + '%';
+      $('reliefRiskVal').textContent = riskBefore + '% → ' + riskAfter + '%';
+      $('reliefToast').classList.add('show');
+      setTimeout(() => $('reliefToast').classList.remove('show'), 5500);
+      logTimeline('Bed stopped — flat, stable, stationary', 'ok');
+      logTimeline('Pressure successfully reduced (' + maxZone.label + ' ' + beforeZoneVal + '%→' + afterVal + '%)', 'ok');
+      state.interventions++;
+      logIntervention(fromPosture, targetPosture, riskBefore, riskAfter);
+      logPosition();
+      progWrap.classList.remove('show');
+      state.phase = 'monitoring';
+      renderAIStatus();
+    });
+  }, TOTAL);
+}
+
+startBtn.addEventListener('click', ()=>{ state.running=!state.running; startBtn.textContent=state.running?'⏸ Pause':'▶ Start'; startBtn.classList.toggle('active', state.running); logTimeline(state.running?'Simulation resumed':'Simulation paused','info'); });
+resetBtn.addEventListener('click', ()=>{ init(scenarioSelect.value); });
+scenarioSelect.addEventListener('change', ()=>{ init(scenarioSelect.value); });
+speedSeg.addEventListener('click', e=>{ const btn=e.target.closest('button'); if(!btn) return; [...speedSeg.children].forEach(b=>b.classList.remove('active')); btn.classList.add('active'); state.speed=parseInt(btn.dataset.speed,10); });
+demoBtn.addEventListener('click', ()=>{
+  scenarioSelect.value='highrisk'; init('highrisk'); state.speed=10;
+  [...speedSeg.children].forEach(b=>b.classList.remove('active')); speedSeg.querySelector('[data-speed="10"]').classList.add('active');
+  state.running=true; startBtn.textContent='⏸ Pause'; startBtn.classList.add('active'); setCamera('iso');
+  logTimeline('Expo demo mode activated — accelerated continuous loop','info');
+});
+
+setInterval(tick, TICK_MS);
+
+/* =========================================================================
+   RENDER LOOP — mesh pulse, heartbeat-synced glow, subtle breathing, orbit
+   ========================================================================= */
+let lastFrame = performance.now();
+function animate(now){
+  requestAnimationFrame(animate);
+  updateTweens(now);
+
+  const t = now/1000;
+  const hr = window.__hrBpm || 74;
+  const beatHz = hr/60;
+  const beatPhase = (Math.sin(t*beatHz*2*Math.PI*0.5)+1)/2; // gentle synced pulse
+
+  allPulseMats.forEach((mat)=>{
+    mat.opacity = 0.75 + 0.2*beatPhase;
+  });
+
+  // subtle breathing: gentle scale on the torso/abdomen segment
+  const breathe = 1 + 0.028*Math.sin(t*1.55);
+  rig.chest.scale.set(breathe, breathe, 1);
+  rig.abdomen.scale.set(breathe, 1, 1);
+
+  // slow idle sway on limbs so the figure never looks frozen
+  armRGroup.rotation.z = Math.sin(t*0.35)*0.02;
+  armLGroup.rotation.z = -Math.sin(t*0.35)*0.02;
+
+  resizeIfNeeded();
+  mainRenderer.render(scene, mainCamera);
+  twinRenderer.render(scene, twinCamera);
+}
+let lastW=0,lastH=0;
+function resizeIfNeeded(){
+  const stage = document.getElementById('simStage');
+  if(stage.clientWidth!==lastW || stage.clientHeight!==lastH){ lastW=stage.clientWidth; lastH=stage.clientHeight; resizeRenderers(); }
+}
+resizeRenderers();
+requestAnimationFrame(animate);
+
+init('elderly');
+
+})();
+</script>
+</body>
+</html>
